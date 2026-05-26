@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { doc, updateDoc } from 'firebase/firestore';
 import * as SecureStore from 'expo-secure-store';
-import { auth } from '../config/firebase';
+import { auth, db } from '../config/firebase';
 
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
@@ -11,12 +12,19 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const setOnlineStatus = async (uid, status) => {
+    try {
+      await updateDoc(doc(db, 'users', uid), { isOnline: status });
+    } catch (e) {}
+  };
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (u) {
         const token = await u.getIdToken();
         await SecureStore.setItemAsync('auth_token', token);
+        await setOnlineStatus(u.uid, true); // online saat login
       } else {
         await SecureStore.deleteItemAsync('auth_token');
       }
@@ -25,25 +33,34 @@ export function AuthProvider({ children }) {
     return unsub;
   }, []);
 
-  // AUTO-LOGOUT 5 MENIT IDLE (Tugas Mandiri)
+  // Update online status saat app background/foreground
+  useEffect(() => {
+    if (!user) return;
+    const subscription = AppState.addEventListener('change', async (state) => {
+      if (state === 'active') {
+        await setOnlineStatus(user.uid, true);
+      } else {
+        await setOnlineStatus(user.uid, false);
+      }
+    });
+    return () => subscription.remove();
+  }, [user]);
+
+  // Auto logout idle
   useEffect(() => {
     if (!user) return;
     let timer = null;
-
     const resetTimer = () => {
       if (timer) clearTimeout(timer);
       timer = setTimeout(async () => {
         await logout();
-      }, 10 * 1000); // ganti ke 5 * 60 * 1000 setelah demo
+      }, 10 * 1000);
     };
-
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') resetTimer();
       else resetTimer();
     });
-
     resetTimer();
-
     return () => {
       if (timer) clearTimeout(timer);
       subscription.remove();
@@ -51,6 +68,7 @@ export function AuthProvider({ children }) {
   }, [user]);
 
   const logout = async () => {
+    if (user) await setOnlineStatus(user.uid, false); // offline saat logout
     await signOut(auth);
     await SecureStore.deleteItemAsync('auth_token');
   };

@@ -32,14 +32,14 @@ export default function LoginScreen({ navigation }) {
       return;
     }
 
-    // Cek biometric sudah terdaftar di perangkat
+    
     const isEnrolled = await LocalAuthentication.isEnrolledAsync();
     if (!isEnrolled) {
       Alert.alert('Belum Terdaftar', 'Silakan daftarkan Face ID / Fingerprint di pengaturan perangkat.');
       return;
     }
 
-    // Tampilkan prompt Face ID / Fingerprint
+    
     const result = await LocalAuthentication.authenticateAsync({
       promptMessage: 'Login dengan biometric',
       fallbackLabel: 'Gunakan password',
