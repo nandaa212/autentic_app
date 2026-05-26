@@ -78,10 +78,10 @@ export default function ChatScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={90}
-    >
+      style={{ flex: 1, marginBottom: 30 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={90}>
+    
       <View style={styles.bgCircle1} />
       <View style={styles.bgCircle2} />
 

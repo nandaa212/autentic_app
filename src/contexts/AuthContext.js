@@ -54,7 +54,7 @@ export function AuthProvider({ children }) {
       if (timer) clearTimeout(timer);
       timer = setTimeout(async () => {
         await logout();
-      }, 10 * 1000);
+      }, 5 * 60 * 1000);
     };
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') resetTimer();
